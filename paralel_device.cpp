@@ -1,4 +1,5 @@
 #include "paralel_device.h"
+
 ParalelDevice::ParalelDevice()
 {
 	kernelFile = defaultKernelFile;
@@ -16,9 +17,10 @@ ParalelDevice::ParalelDevice(std::string _kernelFile, int _width, int _height)
 }
 void ParalelDevice::init()
 {
+
 	size = width*height;
 	std::ifstream file(kernelFile);
-	std::string 	programCode(std::istreambuf_iterator<char>(file), (std::istreambuf_iterator<char>()));
+	std::string programCode(std::istreambuf_iterator<char>(file), (std::istreambuf_iterator<char>()));
 	
 	
 	cl::Program program(programCode);
@@ -33,7 +35,7 @@ void ParalelDevice::init()
 	
 }
 
-void ParalelDevice::process(cl_uchar* input, cl_uchar* out)
+void ParalelDevice::process(cl_uchar* input, cl_uchar* out, int _range)
 {
 	cl::Buffer inBuffer(CL_MEM_READ_WRITE, size);
 	cl::enqueueWriteBuffer(inBuffer, CL_TRUE, 0, size, input);
@@ -41,6 +43,8 @@ void ParalelDevice::process(cl_uchar* input, cl_uchar* out)
 	cl::Buffer outBuffer(CL_MEM_READ_WRITE, size*sizeof(cl_uchar));
 	defaultKernel->setArg(0, inBuffer);
 	defaultKernel->setArg(1, outBuffer);
-	err=defaultDeviceQueue->enqueueNDRangeKernel(*defaultKernel, cl::NullRange, cl::NDRange(640, 480));
+	defaultKernel->setArg(2, _range);
+	defaultDeviceQueue->enqueueNDRangeKernel(*defaultKernel, cl::NullRange, cl::NDRange(640, 480), cl::NDRange(8, 6));
+	defaultDeviceQueue->finish();
 	enqueueReadBuffer(outBuffer, CL_TRUE, 0, size*sizeof(cl_uchar), out);
 }
